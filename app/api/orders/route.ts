@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { orders } from "@/lib/mock-data"
+import { mockOrders } from "@/lib/mock-data"
 
 // Generate order number: MS + YYYYMMDD + 3-digit sequence
 function generateOrderNumber(): string {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const limit = searchParams.get("limit")
   const offset = searchParams.get("offset")
 
-  let filtered = [...orders]
+  let filtered = [...mockOrders]
 
   if (status && status !== "all") {
     filtered = filtered.filter((o) => o.status === status)

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { inquiries } from "@/lib/mock-data"
+import { mockInquiries } from "@/lib/mock-data"
 
 // GET /api/inquiries - List all inquiries (Admin)
 export async function GET(request: Request) {
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const limit = searchParams.get("limit")
   const offset = searchParams.get("offset")
 
-  let filtered = [...inquiries]
+  let filtered = [...mockInquiries]
 
   if (status && status !== "all") {
     filtered = filtered.filter((i) => i.status === status)
