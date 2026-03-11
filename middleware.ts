@@ -3,40 +3,6 @@ import { NextResponse } from 'next/server'
 
 const ADMIN_COOKIE_NAME = 'admin_auth'
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
-
-  // 只保护 /admin 路径
-  if (!pathname.startsWith('/admin')) {
-    return NextResponse.next()
-  }
-
-  // 登录页本身不拦截
-  if (pathname.startsWith('/admin/login')) {
-    return NextResponse.next()
-  }
-
-  const cookie = req.cookies.get(ADMIN_COOKIE_NAME)?.value
-  const expected = process.env.ADMIN_SESSION_TOKEN
-
-  if (cookie && expected && cookie === expected) {
-    return NextResponse.next()
-  }
-
-  const loginUrl = req.nextUrl.clone()
-  loginUrl.pathname = '/admin/login'
-  loginUrl.searchParams.set('from', pathname)
-
-  return NextResponse.redirect(loginUrl)
-}
-
-export const config = {
-  matcher: ['/admin/:path*'],
-}
-
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-
 const locales = ['en', 'zh']
 const defaultLocale = 'zh'
 
@@ -74,7 +40,27 @@ function getLocale(request: NextRequest): string {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip public files and API routes
+  // 1) 管理后台权限校验
+  if (pathname.startsWith('/admin')) {
+    // 登录页本身不拦截
+    if (pathname.startsWith('/admin/login')) {
+      return NextResponse.next()
+    }
+
+    const cookie = request.cookies.get(ADMIN_COOKIE_NAME)?.value
+    const expected = process.env.ADMIN_SESSION_TOKEN
+
+    if (cookie && expected && cookie === expected) {
+      return NextResponse.next()
+    }
+
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/admin/login'
+    loginUrl.searchParams.set('from', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // 2) 其余路径继续走原来的多语言重定向逻辑
   if (
     pathname.startsWith('/api') ||
     pathname.startsWith('/_next') ||
@@ -82,11 +68,6 @@ export function middleware(request: NextRequest) {
     publicFiles.some((file) => pathname === file) ||
     pathname.includes('.')
   ) {
-    return NextResponse.next()
-  }
-
-  // Skip admin routes (no i18n for admin)
-  if (pathname.startsWith('/admin')) {
     return NextResponse.next()
   }
 
