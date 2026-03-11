@@ -1,13 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -35,8 +34,8 @@ export default function AdminLoginPage() {
         return
       }
 
-      const from = searchParams.get("from") || "/admin/products"
-      router.replace(from)
+      // 登录成功后直接跳到商品管理页
+      router.replace("/admin/products")
     } catch {
       setError("网络异常，请稍后重试。")
     } finally {
