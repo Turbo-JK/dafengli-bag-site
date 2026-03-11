@@ -27,9 +27,11 @@ function PDPContent() {
 
   const [product, setProduct] = useState<Product | null>(null)
   const [related, setRelated] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const slug = params.slug as string
+    setLoading(true)
 
     const fetchProduct = async () => {
       try {
@@ -54,6 +56,8 @@ function PDPContent() {
         }
       } catch {
         setProduct(null)
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -71,6 +75,19 @@ function PDPContent() {
   const [quantity, setQuantity] = useState(1)
   const [openAccordion, setOpenAccordion] = useState<string | null>(null)
   const [inquiryOpen, setInquiryOpen] = useState(false)
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center pt-24">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+          <p className="text-sm text-muted-foreground">
+            {locale === 'en' ? 'Loading...' : '加载中...'}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   if (!product) {
     return (
