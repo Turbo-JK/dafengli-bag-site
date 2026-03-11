@@ -1,3 +1,39 @@
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+
+const ADMIN_COOKIE_NAME = 'admin_auth'
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  // 只保护 /admin 路径
+  if (!pathname.startsWith('/admin')) {
+    return NextResponse.next()
+  }
+
+  // 登录页本身不拦截
+  if (pathname.startsWith('/admin/login')) {
+    return NextResponse.next()
+  }
+
+  const cookie = req.cookies.get(ADMIN_COOKIE_NAME)?.value
+  const expected = process.env.ADMIN_SESSION_TOKEN
+
+  if (cookie && expected && cookie === expected) {
+    return NextResponse.next()
+  }
+
+  const loginUrl = req.nextUrl.clone()
+  loginUrl.pathname = '/admin/login'
+  loginUrl.searchParams.set('from', pathname)
+
+  return NextResponse.redirect(loginUrl)
+}
+
+export const config = {
+  matcher: ['/admin/:path*'],
+}
+
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
