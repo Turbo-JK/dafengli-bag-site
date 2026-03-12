@@ -51,6 +51,12 @@ create table if not exists public.product_images (
 create index if not exists idx_product_images_variant_id
   on public.product_images(variant_id, order_index);
 
+-- 首页「按包型选购」圆圈图标（tote / crossbody / clutch / bucket）
+create table if not exists public.category_icons (
+  category_slug text primary key,
+  image_url text not null
+);
+
 -- Optional: basic RLS setup (adjust policies as needed before enabling in production)
 -- alter table public.products enable row level security;
 -- alter table public.product_variants enable row level security;

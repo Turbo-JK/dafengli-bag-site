@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, MessageSquare, ShoppingCart, LayoutDashboard, ChevronLeft } from 'lucide-react'
+import { Package, MessageSquare, ShoppingCart, LayoutDashboard, ChevronLeft, ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const sidebarNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/products', label: 'Products', icon: Package },
+  { href: '/admin/category-icons', label: '包型图标', icon: ImageIcon },
   { href: '/admin/inquiries', label: 'Inquiries', icon: MessageSquare },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
 ]

@@ -209,6 +209,46 @@ export default function AdminProductsPage() {
     router.push(`/zh/bags/${product.slug}`)
   }
 
+  const handleToggleStatus = async (product: AdminProduct) => {
+    const nextStatus = product.status === "active" ? "inactive" : "active"
+    const action = nextStatus === "active" ? "上架" : "下架"
+    try {
+      const res = await fetch(`/api/products/${product.slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product: {
+            slug: product.slug,
+            titleEn: product.titleEn,
+            titleZh: product.titleZh,
+            descriptionEn: product.descriptionEn,
+            descriptionZh: product.descriptionZh,
+            material: product.material,
+            size: product.size,
+            weight: product.weight,
+            moq: product.moq,
+            productionTime: product.productionTime,
+            customizationAvailable: product.customizationAvailable,
+            status: nextStatus,
+            collection: product.collection,
+            category: product.category,
+            tags: product.tags,
+            isNew: product.isNew,
+            isFeatured: product.isFeatured,
+          },
+        }),
+      })
+      if (!res.ok) return
+      const refreshed = await fetch("/api/products")
+      if (refreshed.ok) {
+        const json = await refreshed.json()
+        setProducts(json.data as AdminProduct[])
+      }
+    } catch (e) {
+      console.error(action + "失败", e)
+    }
+  }
+
   const handleDelete = async (product: AdminProduct) => {
     const ok = window.confirm(`确认删除商品「${product.titleZh}」吗？此操作不可撤销。`)
     if (!ok) return
@@ -529,6 +569,16 @@ export default function AdminProductsPage() {
                         编辑
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        className="gap-2"
+                        onClick={() => handleToggleStatus(product)}
+                      >
+                        {product.status === "active" ? (
+                          <>下架</>
+                        ) : (
+                          <>上架</>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         className="gap-2 text-destructive"
                         onClick={() => handleDelete(product)}
                       >
@@ -546,10 +596,7 @@ export default function AdminProductsPage() {
 
       <Dialog
         open={isDialogOpen}
-        onOpenChange={(open) => {
-          // 只允许通过「取消」按钮或保存成功时关闭，点击灰色蒙层不会自动关闭
-          if (open) setIsDialogOpen(true)
-        }}
+        onOpenChange={(open) => setIsDialogOpen(open)}
       >
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
