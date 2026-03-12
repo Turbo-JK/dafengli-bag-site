@@ -29,8 +29,16 @@ export default function AdminLoginPage() {
       })
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.message || "登录失败，请检查账号和密码。")
+        const text = await res.text()
+        let msg = "登录失败，请检查账号和密码。"
+        try {
+          const data = JSON.parse(text)
+          if (data?.message) msg = data.message
+        } catch {
+          if (text) msg = text
+        }
+        setError(msg)
+        setLoading(false)
         return
       }
 
@@ -72,9 +80,14 @@ export default function AdminLoginPage() {
             />
           </div>
           {error && (
-            <p className="text-xs text-destructive">
-              {error}
-            </p>
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
+              <p className="text-sm font-medium text-destructive">{error}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {error.includes("not configured")
+                  ? "请在服务器或 Vercel 环境变量中配置 ADMIN_USERNAME、ADMIN_PASSWORD、ADMIN_SESSION_TOKEN。"
+                  : "请检查账号密码或稍后重试。"}
+              </p>
+            </div>
           )}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "登录中..." : "登录"}
