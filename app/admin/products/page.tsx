@@ -758,7 +758,7 @@ export default function AdminProductsPage() {
                       setFormState((s) => ({ ...s, isFeatured: e.target.checked }))
                     }
                   />
-                  <span>作为首页推荐</span>
+                  <span>标记为热卖（HOT）</span>
                 </label>
               </div>
             </div>

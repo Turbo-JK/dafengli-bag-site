@@ -115,7 +115,13 @@ function BagsContent() {
     // Sort
     switch (sortValue) {
       case 'newest':
-        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        // 热卖（isFeatured）优先，其次按上新时间
+        result.sort((a, b) => {
+          if (a.isFeatured !== b.isFeatured) {
+            return a.isFeatured ? -1 : 1
+          }
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
         break
       case 'price-asc':
         result.sort((a, b) => a.variants[0].price - b.variants[0].price)
