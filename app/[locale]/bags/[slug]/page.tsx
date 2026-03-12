@@ -12,6 +12,7 @@ import { QuickInquiryModal } from '@/components/quick-inquiry-modal'
 import { useCart } from '@/lib/cart-context'
 import { useLocale } from '@/lib/locale-context'
 import { t } from '@/lib/i18n'
+import { getColorDisplayName } from '@/lib/color-names'
 import { getLocalizedTitle, getLocalizedDescription, type Product } from '@/lib/types'
 import { formatPrice } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
@@ -111,7 +112,7 @@ function PDPContent() {
   }
 
   const whatsappMessage = encodeURIComponent(
-    `Hello, I am interested in:\n\n${product.titleEn} - ${variant.colorName}\nQuantity: ${quantity}\nPrice: ${formatPrice(variant.price)}\n\nCould you please confirm availability?`
+    `Hello, I am interested in:\n\n${product.titleEn} - ${getColorDisplayName(variant.colorHex, variant.colorName, locale)}\nQuantity: ${quantity}\nPrice: ${formatPrice(variant.price)}\n\nCould you please confirm availability?`
   )
 
   const accordions = [
@@ -205,14 +206,14 @@ function PDPContent() {
             {/* Color Selection */}
             <div>
               <span className="text-xs text-muted-foreground">
-                {t(locale, 'product.color')}{': '}<span className="text-foreground">{variant.colorName}</span>
+                {t(locale, 'product.color')}{': '}<span className="text-foreground">{getColorDisplayName(variant.colorHex, variant.colorName, locale)}</span>
               </span>
               <div className="mt-3 flex items-center gap-3">
                 {product.variants.map((v, i) => (
                   <ColorSwatch
                     key={v.id}
                     hex={v.colorHex}
-                    name={v.colorName}
+                    name={getColorDisplayName(v.colorHex, v.colorName, locale)}
                     isActive={i === activeVariant}
                     size="md"
                     onClick={() => handleColorChange(i)}
@@ -327,7 +328,7 @@ function PDPContent() {
         isOpen={inquiryOpen}
         onClose={() => setInquiryOpen(false)}
         productName={product.titleEn}
-        colorName={variant.colorName}
+        colorName={getColorDisplayName(variant.colorHex, variant.colorName, locale)}
       />
     </div>
   )

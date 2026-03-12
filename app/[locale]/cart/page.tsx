@@ -9,6 +9,7 @@ import { useCart } from '@/lib/cart-context'
 import { useLocale } from '@/lib/locale-context'
 import { t } from '@/lib/i18n'
 import { getLocalizedTitle } from '@/lib/types'
+import { getColorDisplayName } from '@/lib/color-names'
 import { formatPrice } from '@/lib/mock-data'
 
 export default function CartPage() {
@@ -67,7 +68,7 @@ export default function CartPage() {
                             {getLocalizedTitle(item.product, locale)}
                           </Link>
                           <p className="mt-0.5 text-xs text-muted-foreground">
-                            {item.variant.colorName}
+                            {getColorDisplayName(item.variant.colorHex, item.variant.colorName, locale)}
                           </p>
                         </div>
                         <button

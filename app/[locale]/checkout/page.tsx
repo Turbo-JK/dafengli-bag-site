@@ -10,6 +10,7 @@ import { useCart } from '@/lib/cart-context'
 import { useLocale } from '@/lib/locale-context'
 import { t } from '@/lib/i18n'
 import { getLocalizedTitle } from '@/lib/types'
+import { getColorDisplayName } from '@/lib/color-names'
 import { formatPrice } from '@/lib/mock-data'
 
 export default function CheckoutPage() {
@@ -229,7 +230,7 @@ export default function CheckoutPage() {
                         <div>
                           <p className="text-xs text-foreground">{getLocalizedTitle(item.product, locale)}</p>
                           <p className="text-[11px] text-muted-foreground">
-                            {item.variant.colorName} x{item.quantity}
+                            {getColorDisplayName(item.variant.colorHex, item.variant.colorName, locale)} x{item.quantity}
                           </p>
                         </div>
                         <span className="text-xs text-foreground">

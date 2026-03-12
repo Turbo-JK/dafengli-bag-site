@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Product } from '@/lib/types'
 import { getLocalizedTitle } from '@/lib/types'
+import { getColorDisplayName } from '@/lib/color-names'
 import { formatPrice } from '@/lib/mock-data'
 import { useLocale } from '@/lib/locale-context'
 import { cn } from '@/lib/utils'
@@ -124,8 +125,8 @@ export function ProductCard({ product, className, priority = false }: ProductCar
                     : 'border-border hover:border-muted-foreground'
                 )}
                 style={{ backgroundColor: v.colorHex }}
-                aria-label={v.colorName}
-                title={v.colorName}
+                aria-label={getColorDisplayName(v.colorHex, v.colorName, locale)}
+                title={getColorDisplayName(v.colorHex, v.colorName, locale)}
               />
             ))}
           </div>
