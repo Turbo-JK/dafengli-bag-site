@@ -71,6 +71,12 @@ export default function AdminProductsPage() {
   const [extraVariants, setExtraVariants] = useState<ExtraVariantForm[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null)
+  const [errors, setErrors] = useState<{
+    titleZh?: boolean
+    titleEn?: boolean
+    slug?: boolean
+    category?: boolean
+  }>({})
 
   const [formState, setFormState] = useState<{
     titleZh: string
@@ -139,6 +145,7 @@ export default function AdminProductsPage() {
   const handleOpenDialog = () => {
     setIsEditing(false)
     setEditingProduct(null)
+    setErrors({})
     setFormState((prev) => ({
       ...prev,
       titleZh: "",
@@ -174,6 +181,7 @@ export default function AdminProductsPage() {
 
     setIsEditing(true)
     setEditingProduct(product)
+    setErrors({})
     setFormState({
       titleZh: product.titleZh,
       titleEn: product.titleEn,
@@ -287,10 +295,16 @@ export default function AdminProductsPage() {
 
   const handleSave = async () => {
     // 必填：中文名、英文名、Slug、分类
-    if (!formState.titleZh?.trim()) return
-    if (!formState.titleEn?.trim()) return
-    if (!formState.slug?.trim()) return
-    if (!formState.category?.trim()) return
+    const nextErrors = {
+      titleZh: !formState.titleZh?.trim(),
+      titleEn: !formState.titleEn?.trim(),
+      slug: !formState.slug?.trim(),
+      category: !formState.category?.trim(),
+    }
+    setErrors(nextErrors)
+    if (Object.values(nextErrors).some(Boolean)) {
+      return
+    }
 
     setIsSaving(true)
     try {
@@ -689,8 +703,14 @@ export default function AdminProductsPage() {
                   placeholder="中文名称"
                   value={formState.titleZh}
                   onChange={(e) => setFormState((s) => ({ ...s, titleZh: e.target.value }))}
+                  className={errors.titleZh ? "border-destructive focus:border-destructive" : ""}
                 />
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                <p
+                  className={
+                    "mt-0.5 text-[10px] " +
+                    (errors.titleZh ? "text-destructive" : "text-muted-foreground")
+                  }
+                >
                   必填，用于中文页面标题。
                 </p>
               </div>
@@ -699,8 +719,14 @@ export default function AdminProductsPage() {
                   placeholder="英文名称"
                   value={formState.titleEn}
                   onChange={(e) => setFormState((s) => ({ ...s, titleEn: e.target.value }))}
+                  className={errors.titleEn ? "border-destructive focus:border-destructive" : ""}
                 />
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                <p
+                  className={
+                    "mt-0.5 text-[10px] " +
+                    (errors.titleEn ? "text-destructive" : "text-muted-foreground")
+                  }
+                >
                   必填，用于英文页面标题。
                 </p>
               </div>
@@ -709,8 +735,14 @@ export default function AdminProductsPage() {
                   placeholder="Slug 网址别名"
                   value={formState.slug}
                   onChange={(e) => setFormState((s) => ({ ...s, slug: e.target.value }))}
+                  className={errors.slug ? "border-destructive focus:border-destructive" : ""}
                 />
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                <p
+                  className={
+                    "mt-0.5 text-[10px] " +
+                    (errors.slug ? "text-destructive" : "text-muted-foreground")
+                  }
+                >
                   必填，只能是英文/数字，例如 maison-tote，用于详情页网址。
                 </p>
               </div>
@@ -723,7 +755,10 @@ export default function AdminProductsPage() {
                   onChange={(e) =>
                     setFormState((s) => ({ ...s, category: e.target.value }))
                   }
-                  className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-foreground focus:outline-none"
+                  className={
+                    "w-full border bg-background px-3 py-2 text-sm text-foreground focus:outline-none " +
+                    (errors.category ? "border-destructive focus:border-destructive" : "border-border focus:border-foreground")
+                  }
                 >
                   <option value="">请选择包型</option>
                   <option value="tote">Tote / 托特包</option>
@@ -731,7 +766,12 @@ export default function AdminProductsPage() {
                   <option value="clutch">Clutch / 手拿包</option>
                   <option value="bucket">Bucket / 水桶包</option>
                 </select>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                <p
+                  className={
+                    "mt-0.5 text-[10px] " +
+                    (errors.category ? "text-destructive" : "text-muted-foreground")
+                  }
+                >
                   将用于前台按包型筛选
                 </p>
               </div>
