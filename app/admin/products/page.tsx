@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, UploadCloud } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, UploadCloud, ArrowUpCircle, ArrowDownCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -573,9 +573,15 @@ export default function AdminProductsPage() {
                         onClick={() => handleToggleStatus(product)}
                       >
                         {product.status === "active" ? (
-                          <>下架</>
+                          <>
+                            <ArrowDownCircle className="h-4 w-4" />
+                            下架
+                          </>
                         ) : (
-                          <>上架</>
+                          <>
+                            <ArrowUpCircle className="h-4 w-4" />
+                            上架
+                          </>
                         )}
                       </DropdownMenuItem>
                       <DropdownMenuItem

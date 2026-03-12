@@ -29,7 +29,7 @@ export function ShopByColor() {
   const label = locale === 'en' ? 'Shop by Bag Type' : '按包型选购'
 
   return (
-    <section className="border-t border-border py-24 lg:py-32">
+    <section className="border-t border-border bg-[#F8F7F4] py-24 lg:py-32">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
         <div className="text-center">
           <span className="text-xs tracking-[0.2em] uppercase text-muted-foreground">
@@ -49,20 +49,22 @@ export function ShopByColor() {
                 href={`/${locale}/bags?category=${type.key}`}
                 className="group flex flex-col items-center gap-4"
               >
-                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/60 text-xs font-medium tracking-wide text-foreground transition-transform duration-500 group-hover:scale-110 lg:h-20 lg:w-20">
+                <div className="relative w-full aspect-[4/5] max-w-[280px] overflow-hidden bg-muted/40">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
                       alt={locale === 'en' ? type.nameEn : type.nameZh}
-                      width={80}
-                      height={80}
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="(max-width: 768px) 50vw, 280px"
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                     />
                   ) : (
-                    type.abbrev
+                    <span className="flex h-full w-full items-center justify-center text-2xl font-medium tracking-wide text-muted-foreground">
+                      {type.abbrev}
+                    </span>
                   )}
                 </div>
-                <span className="text-xs tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
+                <span className="w-full max-w-[280px] text-left text-xs font-medium tracking-[0.12em] uppercase text-foreground">
                   {locale === 'en' ? type.nameEn : type.nameZh}
                 </span>
               </Link>
