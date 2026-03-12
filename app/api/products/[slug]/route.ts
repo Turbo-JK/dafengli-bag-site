@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import type { Product } from '@/lib/types'
+import type { Product, ProductImage } from '@/lib/types'
 import type { DbProductRow } from '../route'
 import { mapProduct } from '../route'
 
@@ -40,6 +40,23 @@ export async function PUT(
   try {
     const body = await request.json()
     const productUpdates: Partial<Product> | undefined = body.product
+    const variantsPayload:
+      | Array<{
+          colorName: string
+          colorHex: string
+          price: number
+          compareAtPrice?: number
+          inventory: number
+          sku: string
+          isDefault?: boolean
+          images: Array<{
+            url: string
+            alt: string
+            type: ProductImage['type']
+            orderIndex?: number
+          }>
+        }>
+      | undefined = body.variants
 
     if (!productUpdates) {
       return NextResponse.json(
@@ -96,6 +113,99 @@ export async function PUT(
       console.error('Error updating product', updateError)
       const status = (updateError as any).code === '23505' ? 409 : 500
       return NextResponse.json({ error: 'Failed to update product' }, { status })
+    }
+
+    // If variants payload is provided, recreate variants + images for this product
+    if (variantsPayload && variantsPayload.length) {
+      // Load existing variant ids
+      const { data: existingVariants, error: variantsError } = await supabaseAdmin
+        .from('product_variants')
+        .select('id')
+        .eq('product_id', existing.id)
+
+      if (variantsError) {
+        console.error('Error loading existing variants for update', variantsError)
+        return NextResponse.json({ error: 'Failed to update product variants' }, { status: 500 })
+      }
+
+      const variantIds = (existingVariants ?? []).map((v: any) => v.id)
+
+      if (variantIds.length) {
+        const { error: deleteImagesError } = await supabaseAdmin
+          .from('product_images')
+          .delete()
+          .in('variant_id', variantIds)
+
+        if (deleteImagesError) {
+          console.error('Error deleting existing product images', deleteImagesError)
+          return NextResponse.json({ error: 'Failed to update product variants' }, { status: 500 })
+        }
+
+        const { error: deleteVariantsError } = await supabaseAdmin
+          .from('product_variants')
+          .delete()
+          .in('id', variantIds)
+
+        if (deleteVariantsError) {
+          console.error('Error deleting existing product variants', deleteVariantsError)
+          return NextResponse.json({ error: 'Failed to update product variants' }, { status: 500 })
+        }
+      }
+
+      const variantsToInsert = variantsPayload.map((v) => ({
+        product_id: existing.id,
+        color_name: v.colorName,
+        color_hex: v.colorHex,
+        price: v.price,
+        compare_at_price: v.compareAtPrice ?? null,
+        inventory: v.inventory,
+        sku: v.sku,
+        is_default: v.isDefault ?? false,
+      }))
+
+      const { data: insertedVariants, error: insertVariantsError } = await supabaseAdmin
+        .from('product_variants')
+        .insert(variantsToInsert)
+        .select('*')
+
+      if (insertVariantsError || !insertedVariants) {
+        console.error('Error inserting updated variants', insertVariantsError)
+        return NextResponse.json({ error: 'Failed to update product variants' }, { status: 500 })
+      }
+
+      const imagesToInsert: Array<{
+        variant_id: string
+        url: string
+        alt: string
+        type: string
+        order_index: number
+      }> = []
+
+      ;(insertedVariants as any[]).forEach((variantRow, idx) => {
+        const variantPayload = variantsPayload[idx]
+        if (!variantPayload?.images?.length) return
+
+        variantPayload.images.forEach((img, imageIndex) => {
+          imagesToInsert.push({
+            variant_id: variantRow.id,
+            url: img.url,
+            alt: img.alt,
+            type: img.type,
+            order_index: img.orderIndex ?? imageIndex,
+          })
+        })
+      })
+
+      if (imagesToInsert.length) {
+        const { error: insertImagesError } = await supabaseAdmin
+          .from('product_images')
+          .insert(imagesToInsert)
+
+        if (insertImagesError) {
+          console.error('Error inserting updated product images', insertImagesError)
+          return NextResponse.json({ error: 'Failed to update product images' }, { status: 500 })
+        }
+      }
     }
 
     return NextResponse.json({ success: true })

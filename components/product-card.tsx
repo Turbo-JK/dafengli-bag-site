@@ -83,9 +83,13 @@ export function ProductCard({ product, className, priority = false }: ProductCar
               {locale === 'en' ? 'Quick View' : '快速查看'}
             </span>
           </div>
-          {product.isNew && (
+          {(product.isNew || product.isFeatured) && (
             <span className="absolute top-4 left-4 bg-foreground px-3 py-1 text-[10px] tracking-[0.2em] uppercase text-background">
-              New
+              {product.isNew
+                ? 'NEW'
+                : locale === 'en'
+                  ? 'HOT'
+                  : '热卖'}
             </span>
           )}
         </div>

@@ -42,6 +42,7 @@ interface ExtraVariantForm {
   inventory: string
   sku: string
   file: File | null
+  existingImageUrl?: string
 }
 
 const COMMON_COLORS = [
@@ -200,7 +201,19 @@ export default function AdminProductsPage() {
       descriptionEn: product.descriptionEn,
     })
     setCoverFile(null)
-    setExtraVariants([])
+    setExtraVariants(
+      product.variants.slice(1).map((v, index) => ({
+        id: v.id,
+        colorName: v.colorName,
+        colorHex: v.colorHex,
+        price: String(v.price),
+        compareAtPrice: v.compareAtPrice ? String(v.compareAtPrice) : "",
+        inventory: String(v.inventory),
+        sku: v.sku,
+        file: null,
+        existingImageUrl: v.images[0]?.url ?? "",
+      }))
+    )
     setIsDialogOpen(true)
   }
 
@@ -282,7 +295,85 @@ export default function AdminProductsPage() {
     setIsSaving(true)
     try {
       // 编辑模式：只更新商品基础信息（不动已有图片和变体）
+      const uploadImage = async (file: File | null, existingUrl?: string) => {
+        if (!file) return existingUrl || ""
+        const formData = new FormData()
+        formData.append("file", file)
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+        if (!uploadRes.ok) {
+          throw new Error("上传图片失败")
+        }
+        const uploadJson = await uploadRes.json()
+        return uploadJson.url as string
+      }
+
       if (isEditing && editingProduct) {
+        // 编辑模式：更新商品基础信息 + 全量重建变体与图片
+        const mainVariant = editingProduct.variants[0]
+        const mainExistingImageUrl = mainVariant?.images[0]?.url || ""
+
+        const mainImageUrl = await uploadImage(coverFile, mainExistingImageUrl)
+
+        const variantsPayload = [
+          {
+            colorName: formState.colorName || mainVariant?.colorName || "Default",
+            colorHex: formState.colorHex || mainVariant?.colorHex || "#000000",
+            price: Number(formState.price || (mainVariant?.price ?? 0)),
+            compareAtPrice: formState.compareAtPrice
+              ? Number(formState.compareAtPrice)
+              : mainVariant?.compareAtPrice,
+            inventory: Number(formState.inventory || (mainVariant?.inventory ?? 0)),
+            sku: formState.sku || mainVariant?.sku || "",
+            isDefault: true,
+            images: mainImageUrl
+              ? [
+                  {
+                    url: mainImageUrl,
+                    alt: `${formState.titleZh || formState.titleEn || editingProduct.titleZh} - ${
+                      formState.colorName || mainVariant?.colorName || "Default"
+                    }`,
+                    type: "studio" as ProductImage["type"],
+                    orderIndex: 0,
+                  },
+                ]
+              : [],
+          },
+          // 其他颜色变体
+          ...(await Promise.all(
+            extraVariants.map(async (variant, index) => {
+              const url = await uploadImage(variant.file, variant.existingImageUrl)
+              return {
+                colorName: variant.colorName || `Variant ${index + 2}`,
+                colorHex: variant.colorHex || "#000000",
+                price: Number(variant.price || formState.price || 0),
+                compareAtPrice: variant.compareAtPrice
+                  ? Number(variant.compareAtPrice)
+                  : formState.compareAtPrice
+                    ? Number(formState.compareAtPrice)
+                    : undefined,
+                inventory: Number(variant.inventory || formState.inventory || 0),
+                sku: variant.sku || formState.sku,
+                isDefault: false,
+                images: url
+                  ? [
+                      {
+                        url,
+                        alt: `${formState.titleZh || formState.titleEn || editingProduct.titleZh} - ${
+                          variant.colorName || `Variant ${index + 2}`
+                        }`,
+                        type: "studio" as ProductImage["type"],
+                        orderIndex: 0,
+                      },
+                    ]
+                  : [],
+              }
+            })
+          )),
+        ]
+
         const payload = {
           product: {
             slug: formState.slug,
@@ -303,6 +394,7 @@ export default function AdminProductsPage() {
             isNew: formState.isNew,
             isFeatured: formState.isFeatured,
           },
+          variants: variantsPayload,
         }
 
         const res = await fetch(`/api/products/${editingProduct.slug}`, {
@@ -328,77 +420,32 @@ export default function AdminProductsPage() {
         return
       }
 
-      const uploadImage = async (file: File | null) => {
-        if (!file) return ""
-        const formData = new FormData()
-        formData.append("file", file)
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        })
-        if (!uploadRes.ok) {
-          throw new Error("上传图片失败")
-        }
-        const uploadJson = await uploadRes.json()
-        return uploadJson.url as string
-      }
-
-      // 主色封面图
+      // 新建商品：主色 + 其他颜色
       const mainImageUrl = await uploadImage(coverFile)
 
-      // 其他颜色的图片
-      const extraImageUrls: Record<string, string> = {}
-      for (const variant of extraVariants) {
-        if (variant.file) {
-          const url = await uploadImage(variant.file)
-          extraImageUrls[variant.id] = url
-        }
-      }
-
-      const payload = {
-        product: {
-          slug: formState.slug,
-          titleEn: formState.titleEn,
-          titleZh: formState.titleZh,
-          descriptionEn: formState.descriptionEn || formState.titleEn,
-          descriptionZh: formState.descriptionZh || formState.titleZh,
-          material: formState.material,
-          size: formState.size,
-          weight: formState.weight,
-          moq: Number(formState.moq || 1),
-          productionTime: formState.productionTime,
-          customizationAvailable: formState.customizationAvailable,
-          status: formState.status,
-          collection: formState.collection,
-          category: formState.category,
-          tags: [],
-          isNew: formState.isNew,
-          isFeatured: formState.isFeatured,
+      const variantsPayload = [
+        {
+          colorName: formState.colorName || "Default",
+          colorHex: formState.colorHex || "#000000",
+          price: Number(formState.price || 0),
+          compareAtPrice: formState.compareAtPrice ? Number(formState.compareAtPrice) : undefined,
+          inventory: Number(formState.inventory || 0),
+          sku: formState.sku,
+          isDefault: true,
+          images: mainImageUrl
+            ? [
+                {
+                  url: mainImageUrl,
+                  alt: `${formState.titleZh || formState.titleEn} - ${formState.colorName || "Default"}`,
+                  type: "studio" as ProductImage["type"],
+                  orderIndex: 0,
+                },
+              ]
+            : [],
         },
-        variants: [
-          // 主色变体
-          {
-            colorName: formState.colorName || "Default",
-            colorHex: formState.colorHex || "#000000",
-            price: Number(formState.price || 0),
-            compareAtPrice: formState.compareAtPrice ? Number(formState.compareAtPrice) : undefined,
-            inventory: Number(formState.inventory || 0),
-            sku: formState.sku,
-            isDefault: true,
-            images: mainImageUrl
-              ? [
-                  {
-                    url: mainImageUrl,
-                    alt: `${formState.titleZh || formState.titleEn} - ${formState.colorName || "Default"}`,
-                    type: "studio" as ProductImage["type"],
-                    orderIndex: 0,
-                  },
-                ]
-              : [],
-          },
-          // 其他颜色变体
-          ...extraVariants.map((variant, index) => {
-            const url = extraImageUrls[variant.id]
+        ...(await Promise.all(
+          extraVariants.map(async (variant, index) => {
+            const url = await uploadImage(variant.file)
             return {
               colorName: variant.colorName || `Variant ${index + 1}`,
               colorHex: variant.colorHex || "#000000",
@@ -422,8 +469,31 @@ export default function AdminProductsPage() {
                   ]
                 : [],
             }
-          }),
-        ],
+          })
+        )),
+      ]
+
+      const payload = {
+        product: {
+          slug: formState.slug,
+          titleEn: formState.titleEn,
+          titleZh: formState.titleZh,
+          descriptionEn: formState.descriptionEn || formState.titleEn,
+          descriptionZh: formState.descriptionZh || formState.titleZh,
+          material: formState.material,
+          size: formState.size,
+          weight: formState.weight,
+          moq: Number(formState.moq || 1),
+          productionTime: formState.productionTime,
+          customizationAvailable: formState.customizationAvailable,
+          status: formState.status,
+          collection: formState.collection,
+          category: formState.category,
+          tags: [],
+          isNew: formState.isNew,
+          isFeatured: formState.isFeatured,
+        },
+        variants: variantsPayload,
       }
 
       const res = await fetch("/api/products", {
@@ -616,27 +686,33 @@ export default function AdminProductsPage() {
             <div className="space-y-3">
               <div>
                 <Input
-                  placeholder="中文名称 (必填)"
+                  placeholder="中文名称"
                   value={formState.titleZh}
                   onChange={(e) => setFormState((s) => ({ ...s, titleZh: e.target.value }))}
                 />
-                <p className="mt-0.5 text-[10px] text-muted-foreground">必填</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  必填，用于中文页面标题。
+                </p>
               </div>
               <div>
                 <Input
-                  placeholder="英文名称 (必填)"
+                  placeholder="英文名称"
                   value={formState.titleEn}
                   onChange={(e) => setFormState((s) => ({ ...s, titleEn: e.target.value }))}
                 />
-                <p className="mt-0.5 text-[10px] text-muted-foreground">必填</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  必填，用于英文页面标题。
+                </p>
               </div>
               <div>
                 <Input
-                  placeholder="Slug 网址别名，如 maison-tote (必填)"
+                  placeholder="Slug 网址别名"
                   value={formState.slug}
                   onChange={(e) => setFormState((s) => ({ ...s, slug: e.target.value }))}
                 />
-                <p className="mt-0.5 text-[10px] text-muted-foreground">必填，英文且唯一</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  必填，只能是英文/数字，例如 maison-tote，用于详情页网址。
+                </p>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">
